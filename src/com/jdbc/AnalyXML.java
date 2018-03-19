@@ -22,7 +22,7 @@ public class AnalyXML {
 		Map<String,InfoEntity> infos = new HashMap<String,InfoEntity>();
 		try
 		{
-			File file = new File("E:\\eclipseworkspace2\\test\\src\\com\\xmls");
+			File file = new File("D:\\工作空间\\Spring\\scoremang\\src\\com\\xmls");
 			File[] files = file.listFiles();
 			for(int i=0;i<files.length;i++)
 			{
@@ -39,6 +39,7 @@ public class AnalyXML {
 						NamedNodeMap attrs = node.getAttributes();
 						String tableName = attrs.getNamedItem("table_name").getNodeValue();
 						String className = attrs.getNamedItem("class").getNodeValue();
+						String pk = attrs.getNamedItem("pk").getNodeValue();
 						Class<?> cls = Class.forName(className);
 						NodeList nodeList1 = node.getChildNodes();
 						Map<String,SQLMethod> methods = new HashMap<String,SQLMethod>();
@@ -69,7 +70,7 @@ public class AnalyXML {
 								methods.put(methodName, sqlMethod);
 							}
 						}
-						InfoEntity infoEntity = new InfoEntity(tableName, methods,cls);
+						InfoEntity infoEntity = new InfoEntity(tableName, methods,cls,pk);
 						infos.put(file1.getName().substring(0, file1.getName().length()-4), infoEntity);
 					}
 				}

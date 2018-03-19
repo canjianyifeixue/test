@@ -19,6 +19,7 @@ public class InfoEntity {
 	private String tableName;
 	private Class<?> cls;
 	private Map<String,SQLMethod> methods;
+	private String pk;
 	public String getTableName() {
 		return tableName;
 	}
@@ -44,7 +45,7 @@ public class InfoEntity {
 	public void setMethods(Map<String, SQLMethod> methods) {
 		this.methods = methods;
 	}
-	public Object invoke(String methodName,Map<String,String> params)
+	public Object invoke(String methodName,Map<Object,Object> params)
 	{
 		Object object = null;
 		SQLMethod method = methods.get(methodName);
@@ -57,13 +58,13 @@ public class InfoEntity {
 				if(null != params && params.size() != 0)
 				{
 					sql += " where";
-					Set<Entry<String, String>> set = params.entrySet();
-					Iterator<Entry<String,String>> it = set.iterator();
+					Set<Entry<Object, Object>> set = params.entrySet();
+					Iterator<Entry<Object,Object>> it = set.iterator();
 					Map<String,SQLField> fields = method.getParams();
 					while(it.hasNext())
 					{
-						Entry<String,String> entry = it.next();
-						String paramName = entry.getKey();
+						Entry<Object,Object> entry = it.next();
+						String paramName = (String)entry.getKey();
 						String fieldType = fields.get(paramName).getType();
 						String fh = "=";
 						if("xd".equals(fieldType))
@@ -91,7 +92,7 @@ public class InfoEntity {
 							fh = "<=";
 						}
 						String paramType = fields.get(paramName).getFieldType();
-						String value = entry.getValue();
+						String value = (String)entry.getValue();
 						if("string".equals(paramType))
 						{
 							sql += " " + paramName + " " + fh + " " + "'" + value + "'" + " " + "and";
@@ -158,11 +159,226 @@ public class InfoEntity {
 			}
 			else if("insert".equals(type))
 			{
+				List<String> paramsName = new ArrayList<String>();
+				Map<String,SQLField> flds = this.methods.get(methodName).getParams();
+				Set<Entry<String,SQLField>> set = flds.entrySet();
+				Iterator<Entry<String,SQLField>> it = set.iterator();
+				while(it.hasNext())
+				{
+					Entry<String,SQLField> entry = it.next();
+					if(entry.getKey().equals(this.cls))
+					{
+						continue;
+					}
+					else
+					{
+						paramsName.add(entry.getValue().getName());
+					}
+				}
+				Connection connection = null;
+				connection = MySQLJDBC.getConnection();
+				PreparedStatement pre = null;
+				
+				List<Object> objectList = (List<Object>)params.get(cls);
+				try
+				{
+					for(int k=0;k<objectList.size();k++)
+					{
+						String sql = "insert into "+this.tableName+" (";
+						Object object1 = objectList.get(k);
+						Field[] fields = cls.getDeclaredFields();
+						StringBuffer columns = new StringBuffer();
+						StringBuffer values = new StringBuffer();
+						for(int i=0;i<fields.length;i++)
+						{
+							Field field = fields[i];
+							String fieldName = field.getName();
+							if(paramsName.contains(fieldName))
+							{
+								continue;
+							}
+							field.setAccessible(true);
+							columns.append(field.getName()+",");
+							String value = null;
+							try {
+								value = (String)field.get(object1);
+							} catch (IllegalArgumentException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							} catch (IllegalAccessException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							if(null == value)
+							{
+								values.append(value+",");
+							}
+							else
+							{
+								values.append("'"+value+"',");
+							}
+							
+						}
+						sql = sql+columns.substring(0, columns.length()-1)+") values("+values.substring(0, values.length()-1)+");";
+						System.out.println(sql);
+						pre = connection.prepareStatement(sql);
+						boolean bool = pre.execute();
+						pre.close();
+					}
+				}
+				catch (Exception e) {
+					// TODO: handle exception
+					e.printStackTrace();
+				}
+				finally
+				{
+					if(null != pre)
+					{
+						try {
+							pre.close();
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(null != connection)
+					{
+						try {
+							connection.close();
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
 				
 			}
 			else if("update".equals(type))
 			{
-				
+				String sql = "update "+this.tableName+" set ";
+				Object object1 = params.get(this.cls);
+				Field[] fields = cls.getDeclaredFields();
+				StringBuffer columns = new StringBuffer();
+				StringBuffer values = new StringBuffer();
+				for(int i=0;i<fields.length;i++)
+				{
+					Field field = fields[i];
+					String fieldName = field.getName();
+					if(fieldName.equals(pk))
+					{
+						continue;
+					}
+					field.setAccessible(true);
+					columns.append(field.getName()+",");
+					String value = null;
+					try {
+						value = (String)field.get(object1);
+					} catch (IllegalArgumentException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IllegalAccessException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					if(null == value)
+					{
+						values.append(fieldName+"="+value+",");
+					}
+					else
+					{
+						values.append(fieldName+"='"+value+"'"+",");
+					}
+					
+				}
+				String valu = values.substring(0, values.length()-1);
+				sql  = sql + valu + " where";
+				StringBuffer wheres = new StringBuffer();
+				Set<Entry<Object,Object>> set1 = params.entrySet();
+				Iterator<Entry<Object,Object>> it1 = set1.iterator();
+				Map<String,SQLField> configField = this.methods.get(methodName).getParams();
+				while(it1.hasNext())
+				{
+					
+					Entry<Object,Object> entry = it1.next();
+					Object key = entry.getKey();
+					if(key.equals(this.cls))
+						continue;
+					else
+					{
+						String fh = "=";
+						String s = configField.get((String)entry.getKey()).getType();
+						if("xd".equals(s))
+						{
+							fh = "=";
+						}
+						else if("bxd".equals(s))
+						{
+							fh = "<>";
+						}
+						else if("dy".equals(s))
+						{
+							fh = ">";
+						}
+						else if("xy".equals(s))
+						{
+							fh = "<";
+						}
+						else if("dydy".equals(s))
+						{
+							fh = ">=";
+						}
+						else if("xydy".equals(s))
+						{
+							fh = "<=";
+						}
+						else if("is".equals(s))
+						{
+							fh = "is";
+						}
+						String value = (String)entry.getValue();
+						if(null == value)
+						{
+							wheres.append(" "+(String)entry.getKey()+" "+fh+" "+(String)entry.getValue()+" and");
+						}
+						else
+							wheres.append(" "+(String)entry.getKey()+" "+fh+" "+"'"+(String)entry.getValue()+"'"+" and");
+					}
+				}
+				String wh = wheres.substring(0,wheres.length()-4);
+				sql = sql + wh + ";";
+				System.out.println(sql);
+				Connection connection = null;
+				PreparedStatement pre = null;
+				try
+				{
+					connection = MySQLJDBC.getConnection();
+					pre = connection.prepareStatement(sql);
+					pre.executeUpdate();
+				}
+				catch (Exception e) {
+					// TODO: handle exception
+				}
+				finally
+				{
+					if(null != pre)
+					{
+						try {
+							pre.close();
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(null != connection)
+					{
+						try {
+							connection.close();
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
 			}
 			else if("delete".equals(type))
 			{
@@ -171,10 +387,11 @@ public class InfoEntity {
 		}
 		return object;
 	}
-	public InfoEntity(String tableName, Map<String, SQLMethod> methods,Class<?> cls) {
+	public InfoEntity(String tableName, Map<String, SQLMethod> methods,Class<?> cls,String pk) {
 		this.tableName = tableName;
 		this.methods = methods;
 		this.cls = cls;
+		this.pk = pk;
 	}
 	
 }

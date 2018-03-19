@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity table_name="user" class="com.entity.User">
+	<method name="findByNameAndPassword" type="select">
+		<field name="userName" type="xd" field_type="string"></field>
+		<field name="password" type="xd" field_type="string"></field>
+	</method>
+	<method name="findByName" type="select">
+	    <field name="userName" type="xd" field_type="string"></field>
+	</method>
+</entity>

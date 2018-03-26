@@ -1,13 +1,17 @@
 package com.entity;
 
+import java.util.Date;
+
 public class User {
 	private String id;
 	private String userName;
 	private String password;
 	private String userType;
 	private String phone;
-	private String createTime;
+	private Date createTime;
 	private String userId;
+	private int classId;
+	private String className;
 	public String getId() {
 		return id;
 	}
@@ -39,10 +43,10 @@ public class User {
 	public void setPhone(String phone) {
 		this.phone = phone;
 	}
-	public String getCreateTime() {
+	public Date getCreateTime() {
 		return createTime;
 	}
-	public void setCreateTime(String createTime) {
+	public void setCreateTime(Date createTime) {
 		this.createTime = createTime;
 	}
 	public String getUserId() {
@@ -51,5 +55,19 @@ public class User {
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
+	public int getClassId() {
+		return classId;
+	}
+	public void setClassId(Integer classId) {
+		this.classId = classId;
+	}
+	public String getClassName() {
+		return className;
+	}
+	public void setClassName(String className) {
+		this.className = className;
+	}
+	
+	
 	
 }

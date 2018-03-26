@@ -1,10 +1,12 @@
 package com.entity;
 
+import java.util.Date;
+
 public class StuSubject {
 	private String id;
 	private String subjectName;
 	private String subjectType;
-	private String createTime;
+	private Date createTime;
 	public String getId() {
 		return id;
 	}
@@ -23,10 +25,10 @@ public class StuSubject {
 	public void setSubjectType(String subjectType) {
 		this.subjectType = subjectType;
 	}
-	public String getCreateTime() {
+	public Date getCreateTime() {
 		return createTime;
 	}
-	public void setCreateTime(String createTime) {
+	public void setCreateTime(Date createTime) {
 		this.createTime = createTime;
 	}
 	

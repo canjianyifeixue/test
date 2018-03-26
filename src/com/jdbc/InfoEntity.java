@@ -91,16 +91,71 @@ public class InfoEntity {
 						{
 							fh = "<=";
 						}
-						String paramType = fields.get(paramName).getFieldType();
-						String value = (String)entry.getValue();
-						if("string".equals(paramType))
+						else if("is".equals(fieldType))
 						{
-							sql += " " + paramName + " " + fh + " " + "'" + value + "'" + " " + "and";
+							fh = "is";
 						}
-						else if("int".equals(paramType))
+						else if("in".equals(fieldType))
 						{
+							fh = "in";
+						}
+						else if("isnot".equals(fieldType))
+						{
+							fh = "is not";
+						}
+						String value = null;
+						String paramType = fields.get(paramName).getFieldType();
+						if("in".equals(fh))
+						{
+							if(paramType.equals("string"))
+							{
+								List<String> valueList = (List<String>)entry.getValue();
+								if(null != valueList)
+								{
+									value = "(";
+									for(int i=0;i<valueList.size();i++)
+									{
+										value += "'"+valueList.get(i)+"'"+",";
+									}
+									value = value.substring(0, value.length()-1) + ")";
+								}
+							}
+							else
+							{
+								List<Integer> valueList = (List<Integer>)entry.getValue();
+								if(null != valueList)
+								{
+									value = "(";
+									for(int i=0;i<valueList.size();i++)
+									{
+										value += valueList.get(i)+",";
+									}
+									value = value.substring(0, value.length()-1) + ")";
+								}
+							}
 							sql += " " + paramName + " " + fh + " " + value + " " + "and";
 						}
+						else
+						{
+							value = (String)entry.getValue();
+							if(null != value)
+							{
+								if("string".equals(paramType))
+								{
+									sql += " " + paramName + " " + fh + " " + "'" + value + "'" + " " + "and";
+								}
+								else if("int".equals(paramType))
+								{
+									sql += " " + paramName + " " + fh + " " + value + " " + "and";
+								}
+							}
+							else
+							{
+								sql += " " + paramName + " " + fh + " " + value + " " + "and";
+							}
+						}
+						
+						
 					}
 					sql = sql.substring(0, sql.length() - 4)+";";
 					System.out.println(sql);
@@ -298,7 +353,6 @@ public class InfoEntity {
 				Map<String,SQLField> configField = this.methods.get(methodName).getParams();
 				while(it1.hasNext())
 				{
-					
 					Entry<Object,Object> entry = it1.next();
 					Object key = entry.getKey();
 					if(key.equals(this.cls))
@@ -306,7 +360,9 @@ public class InfoEntity {
 					else
 					{
 						String fh = "=";
+						String paramName = (String)entry.getKey();
 						String s = configField.get((String)entry.getKey()).getType();
+						Map<String,SQLField> fields1 = method.getParams();
 						if("xd".equals(s))
 						{
 							fh = "=";
@@ -335,54 +391,246 @@ public class InfoEntity {
 						{
 							fh = "is";
 						}
-						String value = (String)entry.getValue();
-						if(null == value)
+						else if("in".equals(s))
 						{
-							wheres.append(" "+(String)entry.getKey()+" "+fh+" "+(String)entry.getValue()+" and");
+							fh = "in";
+						}
+						else if("isnot".equals(s))
+						{
+							fh = "is not";
+						}
+						String value = null;
+						String paramType = fields1.get(paramName).getFieldType();
+						if("in".equals(fh))
+						{
+							if(paramType.equals("string"))
+							{
+								List<String> valueList = (List<String>)entry.getValue();
+								if(null != valueList)
+								{
+									value = "(";
+									for(int i=0;i<valueList.size();i++)
+									{
+										value += "'"+valueList.get(i)+"'"+",";
+									}
+									value = value.substring(0, value.length()-1) + ")";
+								}
+							}
+							else
+							{
+								List<Integer> valueList = (List<Integer>)entry.getValue();
+								if(null != valueList)
+								{
+									value = "(";
+									for(int i=0;i<valueList.size();i++)
+									{
+										value += valueList.get(i)+",";
+									}
+									value = value.substring(0, value.length()-1) + ")";
+								}
+							}
+							sql += " " + paramName + " " + fh + " " + value + " " + "and";
 						}
 						else
-							wheres.append(" "+(String)entry.getKey()+" "+fh+" "+"'"+(String)entry.getValue()+"'"+" and");
-					}
-				}
-				String wh = wheres.substring(0,wheres.length()-4);
-				sql = sql + wh + ";";
-				System.out.println(sql);
-				Connection connection = null;
-				PreparedStatement pre = null;
-				try
-				{
-					connection = MySQLJDBC.getConnection();
-					pre = connection.prepareStatement(sql);
-					pre.executeUpdate();
-				}
-				catch (Exception e) {
-					// TODO: handle exception
-				}
-				finally
-				{
-					if(null != pre)
-					{
-						try {
-							pre.close();
-						} catch (SQLException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+						{
+							value = (String)entry.getValue();
+							if(null != value)
+							{
+								if("string".equals(paramType))
+								{
+									sql += " " + paramName + " " + fh + " " + "'" + value + "'" + " " + "and";
+								}
+								else if("int".equals(paramType))
+								{
+									sql += " " + paramName + " " + fh + " " + value + " " + "and";
+								}
+							}
+							else
+							{
+								sql += " " + paramName + " " + fh + " " + value + " " + "and";
+							}
 						}
 					}
-					if(null != connection)
+					sql = sql.substring(0,sql.length()-4)+";";
+					System.out.println(sql);
+					Connection connection = null;
+					PreparedStatement pre = null;
+					try
 					{
-						try {
-							connection.close();
-						} catch (SQLException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+						connection = MySQLJDBC.getConnection();
+						pre = connection.prepareStatement(sql);
+						pre.executeUpdate();
+					}
+					catch (Exception e) {
+						// TODO: handle exception
+					}
+					finally
+					{
+						if(null != pre)
+						{
+							try {
+								pre.close();
+							} catch (SQLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						if(null != connection)
+						{
+							try {
+								connection.close();
+							} catch (SQLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 					}
 				}
 			}
 			else if("delete".equals(type))
 			{
-				
+				String sql = "delete from "+this.tableName+" where";
+				if(null != params && params.size()>0)
+				{
+					Set<Entry<Object,Object>> set1 = params.entrySet();
+					Iterator<Entry<Object,Object>> it1 = set1.iterator();
+					Map<String,SQLField> configField = this.methods.get(methodName).getParams();
+					while(it1.hasNext())
+					{
+						Entry<Object,Object> entry = it1.next();
+						Object key = entry.getKey();
+						if(key.equals(this.cls))
+							continue;
+						else
+						{
+							String fh = "=";
+							String paramName = (String)entry.getKey();
+							String s = configField.get((String)entry.getKey()).getType();
+							Map<String,SQLField> fields1 = method.getParams();
+							if("xd".equals(s))
+							{
+								fh = "=";
+							}
+							else if("bxd".equals(s))
+							{
+								fh = "<>";
+							}
+							else if("dy".equals(s))
+							{
+								fh = ">";
+							}
+							else if("xy".equals(s))
+							{
+								fh = "<";
+							}
+							else if("dydy".equals(s))
+							{
+								fh = ">=";
+							}
+							else if("xydy".equals(s))
+							{
+								fh = "<=";
+							}
+							else if("is".equals(s))
+							{
+								fh = "is";
+							}
+							else if("in".equals(s))
+							{
+								fh = "in";
+							}
+							else if("isnot".equals(s))
+							{
+								fh = "is not";
+							}
+							String value = null;
+							String paramType = fields1.get(paramName).getFieldType();
+							if("in".equals(fh))
+							{
+								if(paramType.equals("string"))
+								{
+									List<String> valueList = (List<String>)entry.getValue();
+									if(null != valueList)
+									{
+										value = "(";
+										for(int i=0;i<valueList.size();i++)
+										{
+											value += "'"+valueList.get(i)+"'"+",";
+										}
+										value = value.substring(0, value.length()-1) + ")";
+									}
+								}
+								else
+								{
+									List<Integer> valueList = (List<Integer>)entry.getValue();
+									if(null != valueList)
+									{
+										value = "(";
+										for(int i=0;i<valueList.size();i++)
+										{
+											value += valueList.get(i)+",";
+										}
+										value = value.substring(0, value.length()-1) + ")";
+									}
+								}
+								sql += " " + paramName + " " + fh + " " + value + " " + "and";
+							}
+							else
+							{
+								value = (String)entry.getValue();
+								if(null != value)
+								{
+									if("string".equals(paramType))
+									{
+										sql += " " + paramName + " " + fh + " " + "'" + value + "'" + " " + "and";
+									}
+									else if("int".equals(paramType))
+									{
+										sql += " " + paramName + " " + fh + " " + value + " " + "and";
+									}
+								}
+								else
+								{
+									sql += " " + paramName + " " + fh + " " + value + " " + "and";
+								}
+							}
+						}
+						sql = sql.substring(0,sql.length()-4)+";";
+						System.out.println(sql);
+						Connection connection = null;
+						PreparedStatement pre = null;
+						try
+						{
+							connection = MySQLJDBC.getConnection();
+							pre = connection.prepareStatement(sql);
+							pre.executeUpdate();
+						}
+						catch (Exception e) {
+							// TODO: handle exception
+						}
+						finally
+						{
+							if(null != pre)
+							{
+								try {
+									pre.close();
+								} catch (SQLException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							if(null != connection)
+							{
+								try {
+									connection.close();
+								} catch (SQLException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		return object;
